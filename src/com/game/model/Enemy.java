@@ -1,34 +1,28 @@
 package com.game.model;
 
-public abstract class Enemy {
+/**
+ * Abstract enemy. Inherits health handling from {@link Character} and adds an
+ * attack strength. Concrete enemies (Goblin, Dragon) override {@link #attack()}
+ * to change <em>how</em> they hurt the player: this is runtime polymorphism.
+ */
+public abstract class Enemy extends Character {
 
-    protected String type;
-    protected int health;
-    protected int attackPower;
+    private final int attackPower;
 
-    public Enemy(String type, int health, int attackPower) {
-        this.type = type;
-        this.health = health;
+    protected Enemy(String name, int maxHealth, int attackPower) {
+        super(name, maxHealth);
+        if (attackPower < 0) {
+            throw new IllegalArgumentException("attackPower cannot be negative");
+        }
         this.attackPower = attackPower;
     }
 
-    public String getType() {
-        return type;
-    }
-
-    public int getHealth() {
-        return health;
-    }
-
-    public int getAttackPower() {
+    protected int getAttackPower() {
         return attackPower;
     }
 
-    public void takeDamage(int damage) {
-        health -= damage;
-        if (health < 0) health = 0;
+    /** Short description shown in the console, e.g. "Goblin". */
+    public String getType() {
+        return getName();
     }
-
-    // every enemy attacks differently
-    public abstract int attack();
 }

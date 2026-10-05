@@ -1,17 +1,16 @@
 package com.game.model;
 
+/** Restores a fixed amount of health when used. */
 public class Potion extends Item {
 
-    private int healAmount;
+    public static final int HEAL_AMOUNT = 20;
 
     public Potion() {
         super("Healing Potion");
-        this.healAmount = 20;
     }
 
     @Override
     public void use(Player player) {
-        player.heal(healAmount);
-        System.out.println("You used a potion! Restored " + healAmount + " HP.");
+        player.heal(HEAL_AMOUNT);
     }
 }

@@ -1,10 +1,15 @@
 package com.game.model;
 
+/**
+ * Abstract item. Every item has a name, and each concrete item defines its own
+ * effect in {@link #use(Player)}. Subclasses are interchangeable wherever an
+ * {@code Item} is expected (polymorphism).
+ */
 public abstract class Item {
 
-    protected String name;
+    private final String name;
 
-    public Item(String name) {
+    protected Item(String name) {
         this.name = name;
     }
 
@@ -12,6 +17,6 @@ public abstract class Item {
         return name;
     }
 
-    // what item does
+    /** Applies this item's effect to the player. */
     public abstract void use(Player player);
 }

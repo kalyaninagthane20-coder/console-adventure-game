@@ -1,81 +1,81 @@
 package com.game.service;
-import com.game.factory.EnemyFactory;
-import com.game.model.Player;
-import com.game.model.Enemy;
-import com.game.model.Potion;
-//import com.game.model.Goblin;
-// import com.game.model.Dragon;
-import java.util.Scanner;
 
+import com.game.factory.EnemyFactory;
+import com.game.model.Enemy;
+import com.game.model.Player;
+import com.game.model.Potion;
+import com.game.ui.ConsoleView;
+import com.game.ui.InputReader;
+
+import java.util.Random;
+
+/**
+ * Game loop: keeps creating encounters until the player dies or quits.
+ * Depends only on abstractions it is given (input, view, random source), so the
+ * whole game can be driven from a test without a real keyboard.
+ */
 public class Game {
 
-    private Player player;
-    private Enemy enemy;
-    private Scanner sc;
+    public enum Outcome { PLAYER_DIED, QUIT }
 
-    public Game() {
-        player = new Player("Kalyani", 100);
-        enemy = EnemyFactory.createEnemy();
-        sc = new Scanner(System.in);
+    private final Player player;
+    private final InputReader input;
+    private final ConsoleView view;
+    private final Random random;
+
+    public Game(Player player, InputReader input, ConsoleView view, Random random) {
+        this.player = player;
+        this.input = input;
+        this.view = view;
+        this.random = random;
     }
 
-    public void start() {
+    public Outcome run() {
+        view.showWelcome(player.getName());
 
-    System.out.println("Welcome to the Adventure!");
+        while (player.isAlive()) {
+            Enemy enemy = EnemyFactory.createRandom(random);
+            view.showEncounter(enemy.getType());
 
-    while (player.getHealth() > 0) {
+            Battle battle = new Battle(player, enemy);
+            Battle.RoundResult result = Battle.RoundResult.ONGOING;
 
-        enemy = EnemyFactory.createEnemy();
-        System.out.println("\nA wild " + enemy.getType() + " appeared!");
+            while (result == Battle.RoundResult.ONGOING) {
+                view.showStatus(player, enemy);
+                view.showActions(player.getItemCount());
 
-        // battle loop
-        while (player.getHealth() > 0 && enemy.getHealth() > 0) {
+                int choice = input.readChoice(1, 4);
+                if (choice == InputReader.QUIT || choice == 4) {
+                    view.showQuit();
+                    return Outcome.QUIT;
+                }
 
-            System.out.println("\nYour Health: " + player.getHealth());
-            System.out.println(enemy.getType() + " Health: " + enemy.getHealth());
+                BattleAction action = BattleAction.fromMenuChoice(choice).orElse(null);
+                if (action == null) {
+                    view.showInvalidChoice();
+                    continue;
+                }
 
-            System.out.println("\nChoose your action:");
-            System.out.println("1. Attack");
-            System.out.println("2. Use Item");
-            System.out.println("3. Run Away");
-
-            int choice = sc.nextInt();
-
-            if (choice == 1) {
-                enemy.takeDamage(20);
-                System.out.println("You attack!");
-            }
-            else if (choice == 2) {
-                player.useItem();
-            }
-            else if (choice == 3) {
-                System.out.println("You escaped!");
-                break;
-            }
-            else {
-                System.out.println("Invalid choice!");
+                result = battle.playRound(action);
+                view.showEvents(battle.getLastEvents());
             }
 
-            // enemy turn
-            if (enemy.getHealth() > 0) {
-                player.takeDamage(enemy.attack());
-                System.out.println(enemy.getType() + " attacks!");
+            switch (result) {
+                case ENEMY_DEFEATED:
+                    Potion loot = new Potion();
+                    player.addItem(loot);
+                    view.showLoot(loot.getName());
+                    break;
+                case PLAYER_FLED:
+                    view.showFled();
+                    break;
+                case PLAYER_DEFEATED:
+                    view.showGameOver();
+                    return Outcome.PLAYER_DIED;
+                default:
+                    break;
             }
         }
-
-        // reward if enemy defeated
-        if (enemy.getHealth() == 0) {
-            System.out.println("You defeated the " + enemy.getType() + "!");
-            System.out.println("Enemy dropped a potion!");
-            player.addItem(new Potion());
-        }
-
-        if (player.getHealth() == 0) {
-            System.out.println("\nGame Over 💀");
-            break;
-        }
-
-        System.out.println("\nPrepare for the next battle...");
+        return Outcome.PLAYER_DIED;
     }
-}
 }
